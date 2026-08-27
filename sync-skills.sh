@@ -22,6 +22,20 @@ fi
 TARGET="${1:-all}"
 SYNCED_PROFILES=()
 
+sync_folder() {
+  local src="$1"
+  local dest="$2"
+  mkdir -p "$dest"
+  if command -v rsync >/dev/null 2>&1; then
+    rsync -a --delete "$src/" "$dest/"
+  else
+    rm -rf "${dest:?}"/*
+    if [ -d "$src" ] && [ "$(ls -A "$src" 2>/dev/null)" ]; then
+      cp -a "$src"/. "$dest"/
+    fi
+  fi
+}
+
 if [ "$TARGET" = "all" ] || [ -z "$TARGET" ]; then
   echo "🔍 Auto-discovering all profile skill folders in: $PROFILES_DIR"
   if [ -d "$PROFILES_DIR" ]; then
@@ -32,8 +46,7 @@ if [ "$TARGET" = "all" ] || [ -z "$TARGET" ]; then
         dest_skills="$HUB/firm/$p_name/skills"
         
         if [ -d "$src_skills" ]; then
-          mkdir -p "$dest_skills"
-          rsync -a --delete "$src_skills/" "$dest_skills/"
+          sync_folder "$src_skills" "$dest_skills"
           SYNCED_PROFILES+=("$p_name")
           echo "  ✓ Synced profile: $p_name"
         fi
@@ -49,8 +62,7 @@ else
   if [ ! -d "$src_skills" ]; then
     echo "⚠️ Warning: No skills directory found for profile '$p_name' at $src_skills"
   else
-    mkdir -p "$dest_skills"
-    rsync -a --delete "$src_skills/" "$dest_skills/"
+    sync_folder "$src_skills" "$dest_skills"
     SYNCED_PROFILES+=("$p_name")
     echo "  ✓ Synced single profile: $p_name"
   fi
