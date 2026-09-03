@@ -84,10 +84,18 @@ if [ -n "$(git status --porcelain)" ]; then
   
   echo "✅ Committed: $COMMIT_MSG"
   
+  # Auto-load GITHUB_TOKEN from .env if not already exported
+  if [ -z "${GITHUB_TOKEN:-}" ]; then
+    if [ -f "${HUB}/../../.env" ]; then
+      export GITHUB_TOKEN="$(grep -E "^GITHUB_TOKEN=" "${HUB}/../../.env" | cut -d"=" -f2- | tr -d "\"" | tr -d "\047")"
+    fi
+  fi
+
   # Push if GITHUB_TOKEN is available
   if [ -n "${GITHUB_TOKEN:-}" ]; then
     echo "🚀 Pushing changes to remote GitHub repository..."
-    git remote set-url origin "https://x-access-token:${GITHUB_TOKEN}@github.com/devalees/skills.git"
+    git remote set-url origin "https://${GITHUB_TOKEN}@github.com/devalees/skills.git"
+    git pull --rebase origin main || true
     git push origin main
     git remote set-url origin "https://github.com/devalees/skills.git"
     echo "🎉 Successfully pushed all profile skills to GitHub!"
